@@ -85,7 +85,8 @@
     window.___gcfg = { isSignedOut: true };
 
     function signinCallback(authResult) {
-        if (authResult['access_token']) {
+
+        if (authResult['access_token'] && authResult['g-oauth-window']) {
 
             console.log( authResult );
 
