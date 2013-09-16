@@ -43,6 +43,9 @@
         border-top-left-radius: 0;
         border-top-right-radius: 0;
     }
+    #signinButton{
+        margin-top: 10px;
+    }
     </style>
 </head>
 
@@ -64,7 +67,54 @@
     </label>
 
     <button class="btn btn-lg btn-primary btn-block" type="submit">Sign in</button>
+
+    <div id="signinButton">
+        <span
+                class="g-signin"
+                data-callback="signinCallback"
+                data-clientid="541774029905.apps.googleusercontent.com"
+                data-cookiepolicy="single_host_origin"
+                data-requestvisibleactions="http://schemas.google.com/AddActivity"
+                data-scope="https://www.googleapis.com/auth/plus.login https://www.googleapis.com/auth/userinfo.email">
+        </span>
+    </div>
 </form>
+
+<script>
+    function signinCallback(authResult) {
+        if (authResult['access_token']) {
+
+            console.log( authResult );
+
+            // Successfully authorized
+            // Hide the sign-in button now that the user is authorized, for example:
+            document.getElementById('signinButton').setAttribute('style', 'display: none');
+
+            gapi.client.load('plus', 'v1', function(){
+                var request = gapi.client.plus.people.get({
+                    'userId': 'me'
+                });
+                request.execute(function(resp) {
+                    console.log(resp);
+                });
+            });
+
+            gapi.client.load('oauth2', 'v2', function() {
+                var request = gapi.client.oauth2.userinfo.get();
+                request.execute(function(obj){
+                    console.log(obj);
+                });
+            });
+
+        } else if (authResult['error']) {
+            // There was an error.
+            // Possible error codes:
+            //   "access_denied" - User denied access to your app
+            //   "immediate_failed" - Could not automatically log in the user
+            // console.log('There was an error: ' + authResult['error']);
+        }
+    }
+</script>
 
 </body>
 </html>
