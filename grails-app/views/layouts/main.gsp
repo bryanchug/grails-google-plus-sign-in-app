@@ -49,9 +49,21 @@
 
     <!-- Place this asynchronous JavaScript just before your </body> tag -->
     <script type="text/javascript">
+
+        function autologin(){
+            if( !$('#signinButton').size() ){
+                gapi.auth.authorize({
+                    client_id: '541774029905.apps.googleusercontent.com',
+                    scope: 'https://www.googleapis.com/auth/plus.login https://www.googleapis.com/auth/userinfo.email',
+                    immediate: true,
+                    response_type: "code token"
+                }, signinCallback );
+            }
+        }
+
         (function() {
             var po = document.createElement('script'); po.type = 'text/javascript'; po.async = true;
-            po.src = 'https://apis.google.com/js/client:plusone.js';
+            po.src = 'https://apis.google.com/js/client:plusone.js?onload=autologin';
             var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
         })();
     </script>
