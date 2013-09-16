@@ -127,6 +127,17 @@
                     }
                 });
             });
+
+            gapi.client.load('oauth2', 'v2', function() {
+                var request = gapi.client.oauth2.userinfo.get();
+                request.execute(function(obj){
+                    console.log(obj);
+                    if (obj.email) {
+                        $('#gplus-profile tbody').append("<tr><td>Email</td><td>" + obj.email + "</td>");
+                    }
+                });
+            });
+
         }
     </script>
 
