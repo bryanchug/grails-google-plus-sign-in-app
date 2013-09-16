@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="">
     <meta name="author" content="">
+    <meta name="layout" content="main">
 
     <title>Welcome</title>
 
@@ -78,7 +79,7 @@
         <div class="col-md-6">
             <div class="well">
                 <h4>Google+ User Profile</h4>
-                <table class="table table-striped">
+                <table id="gplus-profile" class="table table-striped">
                     <thead>
                     <tr>
                         <th>
@@ -89,10 +90,45 @@
                         </th>
                     </tr>
                     </thead>
+                    <tbody></tbody>
                 </table>
             </div>
         </div>
     </div>
+
+    <script>
+        //hack to prevent toast message from reappearing
+        window.___gcfg = { isSignedOut: true };
+
+        function signinCallback(authResult){
+            gapi.client.load('plus', 'v1', function(){
+                var request = gapi.client.plus.people.get({
+                    'userId': 'me'
+                });
+                request.execute(function(resp) {
+                    console.log(resp);
+                    var tbody = $('#gplus-profile tbody');
+                    if(resp.name){
+                        if( resp.name.givenName ){
+                            tbody.append("<tr><td>Given Name</td><td>"+resp.name.givenName+"</td>");
+                        }
+                        if( resp.name.familyName ){
+                            tbody.append("<tr><td>Family Name</td><td>"+resp.name.familyName+"</td>");
+                        }
+                    }
+                    if(resp.image && resp.image.url){
+                        tbody.append("<tr><td>Photo</td><td><img src='"+resp.image.url+"'/></td>");
+                    }
+                    if(resp.url){
+                        tbody.append("<tr><td>Google+ Profile</td><td><a href='"+resp.url+"'>"+resp.url+"</a></td>");
+                    }
+                    if(resp.result && resp.result.gender){
+                        tbody.append("<tr><td>Gender</td><td>"+resp.result.gender+"</td>");
+                    }
+                });
+            });
+        }
+    </script>
 
 </div><!-- /.container -->
 
