@@ -11,8 +11,24 @@ import org.springframework.security.authentication.LockedException
 import org.springframework.security.core.context.SecurityContextHolder as SCH
 import org.springframework.security.web.WebAttributes
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
+import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse
+import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeTokenRequest
+import com.google.api.client.http.HttpTransport
+import com.google.api.client.json.JsonFactory
+import com.google.api.client.http.javanet.NetHttpTransport
+import com.google.api.client.json.jackson2.JacksonFactory
+import com.google.api.client.auth.oauth2.TokenResponseException
+import com.google.api.client.googleapis.auth.oauth2.GoogleCredential
+import com.google.api.services.oauth2.Oauth2
+import com.google.api.services.oauth2.model.Tokeninfo
+import app.User
 
 class LoginController {
+
+    private static final HttpTransport TRANSPORT = new NetHttpTransport()
+    private static final JsonFactory JSON_FACTORY = new JacksonFactory()
+    private static final String CLIENT_ID = '541774029905.apps.googleusercontent.com'
+    private static final String CLIENT_SECRET = 'sw7w6MwWUYJoJT07FtIAOPJd'
 
 	/**
 	 * Dependency injection for the authenticationTrustResolver.
@@ -35,6 +51,69 @@ class LoginController {
 			redirect action: 'auth', params: params
 		}
 	}
+
+    /**
+     * Reference:
+     * https://developers.google.com/+/web/signin/server-side-flow#step_8_initialize_the_google_api_client_library_and_start_the_google_service
+     */
+    def plus = {
+
+        String gPlusId = params.gPlusId
+        String code = params.code
+        String email = params.email
+
+        // Upgrade the authorization code into an access and refresh token.
+        GoogleTokenResponse tokenResponse =
+            new GoogleAuthorizationCodeTokenRequest(TRANSPORT, JSON_FACTORY,
+                    CLIENT_ID, CLIENT_SECRET, code, "postmessage").execute();
+
+        // Create a credential representation of the token data.
+        GoogleCredential credential = new GoogleCredential.Builder()
+                .setJsonFactory(JSON_FACTORY)
+                .setTransport(TRANSPORT)
+                .setClientSecrets(CLIENT_ID, CLIENT_SECRET).build()
+                .setFromTokenResponse(tokenResponse);
+
+        // Check that the token is valid.
+        Oauth2 oauth2 = new Oauth2.Builder(
+                TRANSPORT, JSON_FACTORY, credential).build();
+        Tokeninfo tokenInfo = oauth2.tokeninfo()
+                .setAccessToken(credential.getAccessToken()).execute();
+
+        // If there was an error in the token info, abort.
+        if (tokenInfo.containsKey("error")) {
+            response.sendError 401
+            return
+        }
+
+        // Make sure the token we got is for the intended user.
+        if (tokenInfo.getUserId() != gPlusId || tokenInfo.email != email) {
+            response.sendError 401
+            return
+        }
+
+        // Make sure the token we got is for our app.
+        if (!tokenInfo.getIssuedTo().equals(CLIENT_ID)) {
+            response.sendError 401
+            return
+        }
+
+        User user = User.findByUsername(tokenInfo.email)
+
+        if (!user) {
+            user = new User(username: tokenInfo.email).save()
+        }
+
+        springSecurityService.reauthenticate(user.username)
+
+        def jsonResponse = [
+                status: 'success',
+                redirectUri: SpringSecurityUtils.securityConfig.successHandler.defaultTargetUrl
+        ]
+
+        render(jsonResponse as JSON)
+
+    }
 
 	/**
 	 * Show the login page.

@@ -80,27 +80,6 @@
     </div>
 </form>
 
-<div class="row">
-    <div class="col-md-6">
-        <div class="well">
-            <h4>Google+ User Profile</h4>
-            <table id="gplus-profile" class="table table-striped">
-                <thead>
-                <tr>
-                    <th>
-                        Description
-                    </th>
-                    <th>
-                        Value
-                    </th>
-                </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
 <script>
     //hack to prevent toast message from reappearing
     window.___gcfg = { isSignedOut: true };
@@ -111,20 +90,22 @@
             console.log( authResult );
 
             // Successfully authorized
-            // Hide the sign-in button now that the user is authorized, for example:
-            document.getElementById('signinButton').setAttribute('style', 'display: none');
 
             gapi.client.load('oauth2', 'v2', function() {
                 var request = gapi.client.oauth2.userinfo.get();
                 request.execute(function(obj){
-                    console.log(obj);
-                    if (obj.email) {
-                        $('#gplus-profile tbody').append("<tr><td>Email</td><td>" + obj.email + "</td>");
-                    }
+
+                    $.post('/login/plus', {
+                        code: authResult.code,
+                        email: obj.email,
+                        gPlusId: obj.id
+                    }, function(data){
+                        if( data.status == 'success' ){
+                            location.href = data.redirectUri;
+                        }
+                    })
                 });
             });
-
-            populateData();
 
         } else if (authResult['error']) {
             // There was an error.
